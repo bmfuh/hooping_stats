@@ -2,3 +2,4 @@ pandas~=2.1.4
 requests~=2.31.0
 numpy~=1.26.2
 PySide6~=6.6.1
+nba_api
