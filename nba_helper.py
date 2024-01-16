@@ -4,8 +4,8 @@ import pandas
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QDockWidget, QTextEdit, QApplication, QListWidget, QVBoxLayout, QGridLayout, \
     QLabel, QWidget, QLineEdit, QTableWidget, QPushButton, QTableWidgetItem
-from nba_api.stats.endpoints import playergamelog
-from nba_api.stats.library.parameters import SeasonAll
+from nba_api.stats.endpoints import playergamelog, matchupsrollup
+from nba_api.stats.library.parameters import SeasonAll, Season, SeasonType, PerModeSimple
 from nba_api.stats.static import players
 from functools import partial
 
@@ -65,12 +65,13 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.middle_dock_widget)
 
-
         self.addDockWidget(Qt.LeftDockWidgetArea, other_dock_widget)
         self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
-    def update_table(self,p1_name,p2_name):
-        result_df = player_vs_player(p1_name.text(), p2_name.text())
-        display_stats(result_df,self.middle_dock_widget)
+
+    def update_table(self, p1_name, p2_name):
+        result_df = player_matchups(p1_name.text(), p2_name.text())
+        display_stats(result_df, self.middle_dock_widget)
+
     def get_list_item(self):
         self.textEdit.setPlainText(self.listWidget.currentItem().text())
 
@@ -87,10 +88,44 @@ def player_vs_player(p1_name, p2_name) -> pandas.DataFrame:
     new_log = players_gamelog.sort_values("Game_ID", inplace=False)
     matchups = new_log[new_log["Game_ID"].duplicated(keep=False)]
     matchups = matchups.replace(p1_id, p1_name)
-    matchups = matchups.replace(p2_id,p2_name)
+    matchups = matchups.replace(p2_id, p2_name)
 
     return matchups
 
+
+def player_matchups(offensive_player_name, defenders_names) -> pandas.DataFrame:
+    defenders_names = defenders_names.split(',')
+    offensive_player_id = players.find_players_by_full_name(offensive_player_name)[0]['id']
+    matchups = None
+    # loop through the defenders in the list of defender player ids
+    for each_defender in defenders_names:
+        try:
+            defensive_player_id = players.find_players_by_full_name(each_defender.strip())[0]['id']
+        except IndexError:
+            continue
+        if matchups is not None:
+            new_matchup = matchupsrollup.MatchupsRollup(season=Season.default, per_mode_simple=PerModeSimple.totals,
+                                                        season_type_playoffs=SeasonType.regular,
+                                                        off_player_id_nullable=offensive_player_id,
+                                                        def_player_id_nullable=defensive_player_id).get_data_frames()[0].head(1)
+            new_matchup['OFF_PLAYER_NAME'] = each_defender
+            new_matchup['OFF_PLAYER_ID'] = defensive_player_id
+            new_matchup['MATCHUP_FG_PCT'] = new_matchup['MATCHUP_FG_PCT'] * 100
+            new_matchup['MATCHUP_FG3_PCT'] = new_matchup['MATCHUP_FG3_PCT'] * 100
+            matchups = pandas.concat([matchups, new_matchup], axis=0)
+        else:
+            matchups = matchupsrollup.MatchupsRollup(season=Season.default, per_mode_simple=PerModeSimple.totals,
+                                                     season_type_playoffs=SeasonType.regular,
+                                                     off_player_id_nullable=offensive_player_id,
+                                                     def_player_id_nullable=defensive_player_id).get_data_frames()[0].head(1)
+            matchups['OFF_PLAYER_NAME'] = each_defender
+            matchups['OFF_PLAYER_ID'] = defensive_player_id
+            matchups['MATCHUP_FG_PCT'] = matchups['MATCHUP_FG_PCT'] * 100
+            matchups['MATCHUP_FG3_PCT'] = matchups['MATCHUP_FG3_PCT'] * 100
+    return matchups
+    # p1_id = players.find_players_by_full_name(p1_name)[0]['id']
+    # p2_id = players.find_players_by_full_name(p2_name)[0]['id']
+    # matchupsrollup.MatchupsRollup(season=Season.All.all().get_data_frames())
 
 
 def main():
