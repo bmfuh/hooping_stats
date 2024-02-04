@@ -1,5 +1,5 @@
 import pandas
-from nba_api.stats.endpoints import playervsplayer, matchupsrollup, playergamelog
+from nba_api.stats.endpoints import playervsplayer, matchupsrollup, playergamelog, boxscorematchupsv3
 from nba_api.stats.endpoints import playercareerstats
 import typing
 import nba_api.stats.static.players as player
@@ -74,13 +74,25 @@ def get_player_vs_player_game_ids(p1_id, p2_id, years: list, season=None):
     return list(game_ids)
 
 
-def get_player_vs_team_game_ids(p_id, team_name, season=None):
+def get_player_vs_team_game_ids(p_id, team_abbreviation, season=None):
     gamelog = pandas.concat(playergamelog.PlayerGameLog(player_id=p_id,season=SeasonAll.all).get_data_frames())
+    matchups = gamelog[gamelog["MATCHUP"].str.contains(team_abbreviation)]
+    game_ids = matchups["Game_ID"]
 
-
+    # print("Done")
+    return list(game_ids)
     # gamelog = pandas.concat(teamvsplayer.TeamVsPlayer(vs_player_id=p_id, team_id=team_id).get_data_frames())
+
+def get_player_offensive_performance_on_game_ids(p_id, game_id):
+
+    matchups = pandas.concat(boxscorematchupsv3.BoxScoreMatchupsV3(game_id=game_id).get_data_frames())
+    matchups = matchups[matchups["personIdOff"] == p_id]
     print("done")
 
+def get_player_defensive_performance_on_game_ids(p_id, game_id):
+
+    matchups = pandas.concat(boxscorematchupsv3.BoxScoreMatchupsV3(game_id=game_id).get_data_frames())
+    matchups = matchups[matchups["personIdDef"] == p_id]
 
 def player_vs_player(p1_id, p2_id):
     """0
@@ -98,7 +110,8 @@ def main():
     team_id = get_team_id("Lakers")
     # team_name = Los_Anz
     # test = get_player_vs_player_game_ids(p1_id, p2_id, [2020,2021,2022,2023])
-    test2 = get_player_vs_team_game_ids(p1_id,"Los Angelos Lakers")
+    test2 = get_player_vs_team_game_ids(p1_id,"TOR")
+    test3 = get_player_offensive_performance_on_game_ids(p1_id, test2[0])
     print(test2)
 
 
