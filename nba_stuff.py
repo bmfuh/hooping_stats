@@ -9,7 +9,7 @@ from nba_api.stats.library.parameters import SeasonAll, Season, SeasonType, PerM
 from nba_api.stats.endpoints import playergamelogs
 from nba_api.stats.endpoints import playercompare
 import pandas as pd
-
+from nba_api.stats.endpoints import TeamDashLineups
 # career = playercareerstats.PlayerCareerStats()
 m = player.find_players_by_full_name("lebron james")[0]
 k = player.find_players_by_full_name("Jayson Tatum")[0]

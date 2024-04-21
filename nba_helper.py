@@ -95,7 +95,11 @@ def player_vs_player(p1_name, p2_name) -> pandas.DataFrame:
 
 def player_matchups(offensive_player_name, defenders_names) -> pandas.DataFrame:
     defenders_names = defenders_names.split(',')
-    offensive_player_id = players.find_players_by_full_name(offensive_player_name)[0]['id']
+    try:
+        offensive_player_id = players.find_players_by_full_name(offensive_player_name)[0]['id']
+    except IndexError:
+        return
+
     matchups = None
     # loop through the defenders in the list of defender player ids
     for each_defender in defenders_names:
